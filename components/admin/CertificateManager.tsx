@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Save, Upload, FileText, Award, Download, Loader2 } from 'lucide-react'
+import { Save, Upload, FileText, Award, Download, Loader2, Eye, X } from 'lucide-react'
 import type { CertificateTemplate, Curriculum } from '@/types'
 import {
   CERTIFICATE_PLACEHOLDERS,
@@ -33,6 +33,7 @@ export default function CertificateManager({
   const supabase = createClient()
   const [savingId, setSavingId] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [previewItem, setPreviewItem] = useState<CurriculumTemplateState | null>(null)
 
   const [items, setItems] = useState<CurriculumTemplateState[]>(() =>
     curricula.map((curriculum) => {
@@ -279,18 +280,27 @@ export default function CertificateManager({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => handleSave(item)}
-                  disabled={savingId === item.curriculumId}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {savingId === item.curriculumId ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4" />
-                  )}
-                  {savingId === item.curriculumId ? 'Menyimpan...' : 'Simpan Template'}
-                </button>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={() => setPreviewItem(item)}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-indigo-100 bg-indigo-50 px-6 py-3 text-sm font-black text-indigo-600 transition-all hover:bg-indigo-100 hover:border-indigo-200"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Preview Template
+                  </button>
+                  <button
+                    onClick={() => handleSave(item)}
+                    disabled={savingId === item.curriculumId}
+                    className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-white shadow-lg shadow-indigo-500/20 transition-all hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingId === item.curriculumId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="h-4 w-4" />
+                    )}
+                    {savingId === item.curriculumId ? 'Menyimpan...' : 'Simpan Template'}
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -313,6 +323,45 @@ export default function CertificateManager({
           </div>
         ))}
       </div>
+
+      {/* Modal Preview */}
+      {previewItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm">
+          <div className="flex h-full max-h-[90vh] w-full max-w-6xl flex-col rounded-[2.5rem] bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 px-8 py-6">
+              <div>
+                <h3 className="text-xl font-black text-slate-900">
+                  Preview Sertifikat
+                </h3>
+                <p className="text-sm font-medium text-slate-500">
+                  {previewItem.curriculumTitle}
+                </p>
+              </div>
+              <button
+                onClick={() => setPreviewItem(null)}
+                className="rounded-full bg-slate-100 p-3 text-slate-500 transition-colors hover:bg-slate-200 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-hidden bg-slate-100 p-8">
+              <div className="mx-auto flex h-full w-full items-center justify-center">
+                <iframe
+                  title="Certificate Preview"
+                  className="h-full max-h-[794px] w-full max-w-[1123px] bg-white shadow-sm"
+                  srcDoc={previewItem.templateContent
+                    .replace(/<<\s*nama peserta\s*>>/g, 'Ahmad Fulan')
+                    .replace(/<<\s*email peserta\s*>>/g, 'ahmad@example.com')
+                    .replace(/<<\s*nama kurikulum\s*>>/g, previewItem.curriculumTitle)
+                    .replace(/<<\s*slug kurikulum\s*>>/g, previewItem.curriculumSlug)
+                    .replace(/<<\s*tanggal lulus\s*>>/g, new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' }))
+                    .replace(/<<\s*tahun\s*>>/g, String(new Date().getFullYear()))}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
